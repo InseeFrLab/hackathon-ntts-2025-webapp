@@ -55,7 +55,7 @@ const search = view(
 ```js
 const search_table = view(
     Inputs.table(search, {
-        columns: ["NUTS3", "artificial+", "artificial-", "artificial_net", "NDVI+", "NDVI-", "NDVI_net"]
+        columns: ["NUTS3", "artificial_ratio", "artificial+", "artificial-", "artificial_net", "NDVI+", "NDVI-", "NDVI_net"]
     })
 );
 ```
@@ -155,13 +155,99 @@ marker.addTo(map);
 ```js
 
 const predictions = L.tileLayer.wms("https://geoserver-hachathon2025.lab.sspcloud.fr/geoserver/hachathon2025/wms", {
-            layers: "hachathon2025:tmpmbedp9_6",  // Layer name
+            layers: "hachathon2025:predUE2024",  // Layer name
             format: 'image/png',  // Use image format
             transparent: true,  // Keep background transparent
             version: '1.1.0',  // WMS version
             attribution: "GeoServer Hachathon 2025",
-            cql_filter: `label='1'`
+           // cql_filter: `label='1'`
         });
+
+
+```
+
+```js
+
+////////////////////////////////////////////
+// 1) Définition de la légende
+////////////////////////////////////////////
+
+// Tableau des classes de la couche "predictions" (exemple)
+// Tableau des classes et couleurs (vous pouvez adapter les couleurs exactes)
+const predictionsClasses = [
+  { label: "Sealed (1)", color: "#FF0100" },
+  { label: "Woody – needle leaved trees (2)", color: "#238B23" },
+  { label: "Woody – Broadleaved deciduous trees (3)", color: "#80FF00" },
+  { label: "Woody – Broadleaved evergreen trees (4)", color: "#00FF00" },
+  { label: "Low-growing woody plants (bushes, shrubs) (5)", color: "#804000" },
+  { label: "Permanent herbaceous (6)", color: "#CCF24E" },
+  { label: "Periodically herbaceous (7)", color: "#FEFF80" },
+  { label: "Lichens and mosses (8)", color: "#FF81FF" },
+  { label: "Non- and sparsely-vegetated (9)", color: "#BFBFBF" },
+  { label: "Water (10)", color: "#0080FF" }
+];
+
+// Création d’un contrôle Leaflet (position : bottomright)
+const predictionsLegend = L.control({ position: 'bottomright' });
+
+predictionsLegend.onAdd = function (map) {
+  // Conteneur principal <div>
+  const div = L.DomUtil.create("div", "info legend");
+
+  // Rendez le fond blanc/transparent, le texte noir, etc.
+  // Vous pouvez ajuster l’opacité, la couleur de la bordure, etc.
+  div.style.background = "rgba(255, 255, 255, 0.8)";
+  div.style.padding = "8px";
+  div.style.borderRadius = "6px";
+  div.style.border = "1px solid #999";
+  div.style.color = "#000";
+
+  // Un titre en haut de la légende
+  div.innerHTML += "<h4 style='margin-top:0; color: black;'>Predictions</h4>";
+
+  // Pour chaque classe : un petit carré coloré + le label
+  predictionsClasses.forEach((c) => {
+    div.innerHTML += `
+      <div style="display: flex; align-items: center; margin-bottom: 4px; font-size: 14px;">
+        <!-- Carré de couleur -->
+        <span style="
+          width: 18px;
+          height: 18px;
+          background: ${c.color};
+          display: inline-block;
+          margin-right: 8px;
+          border: 1px solid #999;">
+        </span>
+        <span>${c.label}</span>
+      </div>
+    `;
+  });
+
+  return div;
+};
+
+////////////////////////////////////////////
+// 2) Gestion de l’affichage conditionnel
+////////////////////////////////////////////
+
+// Écoute l'événement "overlayadd": activé lorsqu'un overlay est coché dans la liste
+map.on("overlayadd", function(e) {
+  // e.name correspond au libellé de la couche dans le control.layers
+  // ou e.layer est la couche en question.
+  //
+  // Si le nom correspond à "predictions" (celui que vous avez dans le control.layers),
+  // alors on ajoute la légende sur la carte.
+  if (e.name === "predictions") {
+    predictionsLegend.addTo(map);
+  }
+});
+
+// Écoute l'événement "overlayremove": déclenché lorsqu'un overlay est décoché
+map.on("overlayremove", function(e) {
+  if (e.name === "predictions") {
+    map.removeControl(predictionsLegend);
+  }
+});
 
 
 ```
