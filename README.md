@@ -1,1 +1,1 @@
-[dashboard link](https://clement2323.github.io/webapphackathon2025)
+[dashboard link](https://inseefrlab.github.io/hackathon-ntts-2025-webapp/)
