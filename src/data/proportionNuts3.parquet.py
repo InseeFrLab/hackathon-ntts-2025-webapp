@@ -12,8 +12,7 @@ fs = s3fs.S3FileSystem(
 )
 
 # Construct full S3 path
-path_name="projet-hackathon-ntts-2025/indicators/indic_clc+.parquet"
-
+path_name="projet-hackathon-ntts-2025/indicators/indic_predictions.parquet"
 
 # Open the file using s3fs and read it with pandas
 with fs.open(path_name, "rb") as f:
@@ -27,4 +26,3 @@ buf_bytes = dataframe_to_parquet_bytes(df)
 
 # Write the bytes to standard output
 sys.stdout.buffer.write(buf_bytes)
-

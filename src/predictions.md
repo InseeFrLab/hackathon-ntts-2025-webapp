@@ -9,55 +9,70 @@ import {filterObject} from "./components/utils.js";
 
 ```js
 // Crée un élément h1 avec le nom du département
-const titre = html`<h1>Buildings </h1>`;
+const titre = html`<h1>Predictions</h1>`;
 display(titre);
 ```
 
 
 ```js
 const nuts3 = FileAttachment("./data/nuts3.json").json()
-const statNuts3 = FileAttachment('./data/statNuts3.parquet').parquet()
+const statNuts3 = FileAttachment('./data/proportionNuts3.parquet').parquet()
+const statsPlot = FileAttachment('./data/statsPopulationNuts3.parquet').parquet()
 const available_years = ['2018','2021','2024']
-const available_nuts = ["BG322", "CY000", "CZ072", "DEA54", "EE00A", "EL521", "ES612", "FI1C1", "BE100", "BE251", "FRJ27", "FRK26"]
-
 ```
 
 
 ```js
-const years_select = view(Inputs.form({
-  year_start : Inputs.select(available_years, {value: available_years[0], label: "start"}),
-  year_end : Inputs.select(available_years, {value: available_years[1], label: "end"})
-},
- {
-    template: (formParts) => htl.html`
-     <div>
-       <div style="
-         width: 400px;
-         display: flex;
-         gap: 10px;
-       ">
-         ${Object.values(formParts)}
-       </div>
-     </div>`
-  }
-))
-```
-```js
-const placeholder_nuts = "BE100"
+//récupération du centre de l'ilot à partir de l'ilot sélectionné
+const placeholder_nuts = "BE251"
+const placeholder_name = "Bruxelles"
+const placeholder_nuts_name = placeholder_nuts + " " + placeholder_name
+
 const search = view(
      Inputs.search(statNuts3, 
      {
-       placeholder: placeholder_nuts,
-       columns:["NUTS3"]
+       placeholder: placeholder_nuts_name,
+       columns:["NUTS3","name"]
      })
    )
 ```
+
 ```js
 const search_table = view(
-    Inputs.table(search, {
-        columns: ["NUTS3", "artificial_ratio", "artificial+", "artificial-", "artificial_net", "NDVI+", "NDVI-", "NDVI_net"]
-    })
-);
+      Inputs.table(search, {
+        columns: ["NUTS3","name","artificial_ratio_2018", "artificial_ratio_2021", "artificial_ratio_2024", "artificial_evolution_2018_2024","artificial_evolution_2021_2024"],
+        header: {
+          NUTS3: 'NUTS3',
+          name: 'Name',
+          artificial_ratio_2018: 'Art. R. 2018',
+          artificial_ratio_2021: 'Art. R. 2021',
+          artificial_ratio_2024: 'Art. R. 2024',
+          artificial_evolution_2018_2024: 'Evol 2018-2024',
+          artificial_evolution_2021_2024: 'Evol 2021-2024'
+        },
+        width: {
+          NUTS3: 80,
+          name: 120,
+          artificial_ratio_2018: 100,
+          artificial_ratio_2021: 100,
+          artificial_ratio_2024: 100,
+          artificial_evolution_2018_2024: 110,
+          artificial_evolution_2021_2024: 110
+        },
+        format: {
+          artificial_ratio_2018: x => `${(Math.round(x * 10) / 10).toFixed(1)}%`,
+          artificial_ratio_2021: x => `${(Math.round(x * 10) / 10).toFixed(1)}%`,
+          artificial_ratio_2024: x => `${(Math.round(x * 10) / 10).toFixed(1)}%`,
+          artificial_evolution_2018_2024: x => `${(Math.round(x * 10) / 10).toFixed(1)}%`,
+          artificial_evolution_2021_2024: x => `${(Math.round(x * 10) / 10).toFixed(1)}%`
+        },
+        sort: {
+          column: 'NUTS3',
+          reverse: false
+        },
+        rows: 10
+      })
+    );
 ```
 ```js
 const center = getCentroid(
@@ -66,10 +81,6 @@ const center = getCentroid(
   )
 ```
 
-```js
-const year_start = years_select["year_start"]
-const year_end = years_select["year_end"]
-```
 
 ```js
 // Initialisation de la carte Leaflet
@@ -126,7 +137,7 @@ const marker = getMarker(center);
 const BORDERS = getClusters(nuts3);
 
 const Sentinel2 = getSatelliteImages();
-const selectedSentinel2 = filterObject(Sentinel2, [`Sentinel2 ${year_start}`, `Sentinel2 ${year_end}`,])
+const selectedSentinel2 = filterObject(Sentinel2, [`Sentinel2 2018`, `Sentinel2 2021`, `Sentinel2 2024`])
 
 
 OSM['OpenStreetMap clair'].addTo(map);
@@ -154,8 +165,8 @@ marker.addTo(map);
 
 ```js
 
-const predictions = L.tileLayer.wms("https://geoserver-hachathon2025.lab.sspcloud.fr/geoserver/hachathon2025/wms", {
-            layers: "hachathon2025:predUE2024",  // Layer name
+const predictions_2018 = L.tileLayer.wms("https://geoserver-hachathon2025.lab.sspcloud.fr/geoserver/hachathon2025/wms", {
+            layers: "hachathon2025:predUE2018",  // Layer name
             format: 'image/png',  // Use image format
             transparent: true,  // Keep background transparent
             version: '1.1.0',  // WMS version
@@ -163,6 +174,25 @@ const predictions = L.tileLayer.wms("https://geoserver-hachathon2025.lab.sspclou
            // cql_filter: `label='1'`
         });
 
+
+const predictions_2021 = L.tileLayer.wms("https://geoserver-hachathon2025.lab.sspcloud.fr/geoserver/hachathon2025/wms", {
+            layers: "hachathon2025:predUE2021",  // Layer name
+            format: 'image/png',  // Use image format
+            transparent: true,  // Keep background transparent
+            version: '1.1.0',  // WMS version
+            attribution: "GeoServer Hachathon 2025",
+           // cql_filter: `label='1'`
+        });
+
+
+const predictions_2024 = L.tileLayer.wms("https://geoserver-hachathon2025.lab.sspcloud.fr/geoserver/hachathon2025/wms", {
+            layers: "hachathon2025:predUE2024",  // Layer name
+            format: 'image/png',  // Use image format
+            transparent: true,  // Keep background transparent
+            version: '1.1.0',  // WMS version
+            attribution: "GeoServer Hachathon 2025",
+           // cql_filter: `label='1'`
+        });
 
 ```
 
@@ -237,33 +267,86 @@ map.on("overlayadd", function(e) {
   //
   // Si le nom correspond à "predictions" (celui que vous avez dans le control.layers),
   // alors on ajoute la légende sur la carte.
-  if (e.name === "predictions") {
+  if (e.name === "Pred 2018" || e.name === "Pred 2021" || e.name === "Pred 2024") {
     predictionsLegend.addTo(map);
   }
 });
 
 // Écoute l'événement "overlayremove": déclenché lorsqu'un overlay est décoché
 map.on("overlayremove", function(e) {
-  if (e.name === "predictions") {
+  if (e.name === "Pred 2018" || e.name === "Pred 2021" || e.name === "Pred 2024") {
     map.removeControl(predictionsLegend);
   }
 });
+```
+```js 
+const imperviousBuilt = L.tileLayer.wms("https://image.discomap.eea.europa.eu/arcgis/services/GioLandPublic/HRL_BuiltUp_2018/ImageServer/WMSServer?", {
+    layers: "HRL_BuiltUp_2018", // You may need to check the exact layer name in the GetCapabilities response
+    format: 'image/png',
+    transparent: true,
+    version: '1.3.0',
+    attribution: "© Copernicus HRL Built-Up 2018 - European Environment Agency",
+    opacity: 0.7
+});
 
+// Create a new WMS layer for HRL Forest Type 2018
+const layerForest = L.tileLayer.wms("https://image.discomap.eea.europa.eu/arcgis/services/GioLandPublic/HRL_ForestType_2018/ImageServer/WMSServer?", {
+    layers: "HRL_ForestType_2018", // Ensure this is the correct layer name from GetCapabilities
+    format: 'image/png',
+    transparent: true,
+    version: '1.3.0',
+    attribution: "© Copernicus HRL Forest Type 2018 - European Environment Agency",
+    opacity: 0.7
+});
 
 ```
-
 ```js
  L.control.layers({
    ...OSM,
    ...OSMDark,  
    },
 { ...selectedSentinel2,
-  predictions,
-  differences,
+ [`Pred 2018`]: predictions_2018,
+  [`Pred 2021`]: predictions_2021,
+ [`Pred 2024`]:  predictions_2024,
  [`CLC+ 2018`]: CLCplus2018,
   [`CLC+ 2021`]: CLCplus2021,
   [`Inverted CLC+ 2021`]: InvertCLC,
+  [`imperviousBuilt`]:imperviousBuilt,
+  [`Forest`]: layerForest
 }
 ).addTo(map);
 
+```
+
+```js
+
+// Charger les données (remplacez `statsPlot` par vos données réelles)
+const data = statsPlot.batches[0]; 
+
+// Vérification si les données sont bien accessibles
+console.log("Data:", data);
+
+// Créer un scatter plot entre artificial_ratio_2021 et population_2021
+const scatterPlot = Plot.plot({
+  width: 1000,
+  height: 400,
+  marks: [
+    Plot.dot(data, {
+      x: "artificial_ratio_2021",
+      y: "population_2021",
+      stroke: "red",
+      fill: "red",
+      opacity: 1,
+      r: 4, // Taille des points
+    }),
+    Plot.axisX({ label: "Artificial Ratio 2021 (%)", tickFormat: d => d.toFixed(2) }),
+    Plot.axisY({ label: "Population 2021 (thousands)", tickFormat: d => (d/1000) }),
+  ]
+});
+
+```
+
+```js
+scatterPlot
 ```

@@ -3,10 +3,11 @@ export default {
   // The app’s title; used in the sidebar and webpage titles.
   title: "buildings detection",
   pages: [
-      { name: "",
+      { name: "Outline",
         path: "/",
         pages: [
-          {name: "Dashboard", path: "dashboard"}
+          {name: "CLC+ Delta", path: "clc+delta"},
+          {name: "Predictions", path: "predictions"}
         ]
       }
     ],
